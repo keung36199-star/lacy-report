@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LACY 經營日報</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap">
+<style>
+body{margin:0;background:#f4f2ee;font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;color:#222}
+header{position:sticky;top:0;z-index:5;background:#222;color:#fff;padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+header h1{font-size:17px;margin:0;font-weight:700}
+.nav{display:flex;gap:6px;align-items:center}
+.nav button,.nav select{font:inherit;font-size:14px;padding:6px 10px;border-radius:6px;border:1px solid #555;background:#333;color:#fff;min-height:36px}
+.nav button:disabled{opacity:.4}
+main{max-width:900px;margin:0 auto;padding:16px;background:#fff;min-height:80vh}
+.status{color:#777;padding:30px 0;text-align:center}
+.rep .pb{page-break-before:auto;margin-top:28px}
+.rep table{max-width:100%}
+@media (max-width:700px){
+ main{padding:10px}
+ .rep .g{grid-template-columns:1fr 1fr !important}
+ .rep .two{grid-template-columns:1fr !important}
+ .rep table{display:block;overflow-x:auto;white-space:nowrap}
+ .rep h1{font-size:15pt !important}
+}
+</style>
+</head>
+<body>
+<header>
+<h1>LACY·雪境餐酒館 經營日報</h1>
+<div class="nav">
+<button id="prev" type="button" aria-label="前一天">‹ 前一天</button>
+<label for="sel" style="position:absolute;left:-9999px">選擇日期</label>
+<select id="sel"></select>
+<button id="next" type="button" aria-label="後一天">後一天 ›</button>
+</div>
+</header>
+<main id="box"><div class="status">載入中…</div></main>
+<script>
+let dates=[];
+const box=document.getElementById('box'),sel=document.getElementById('sel'),prev=document.getElementById('prev'),next=document.getElementById('next');
+function key(d){return 'd'+d.replace(/-/g,'')}
+function fromHash(){const h=location.hash.slice(1);return dates.find(d=>key(d)===h)}
+async function show(d){
+  sel.value=d;const i=dates.indexOf(d);prev.disabled=i>=dates.length-1;next.disabled=i<=0;
+  box.innerHTML='<div class="status">載入中…</div>';
+  try{const r=await fetch('r/'+d+'.html',{cache:'no-store'});if(!r.ok)throw 0;box.innerHTML=await r.text();window.scrollTo(0,0)}
+  catch(e){box.innerHTML='<div class="status">這一天的日報暫時打不開，請稍後再試。</div>'}
+}
+function go(d){if(location.hash.slice(1)===key(d))show(d);else location.hash=key(d)}
+sel.onchange=()=>go(sel.value);
+prev.onclick=()=>{const i=dates.indexOf(sel.value);if(i<dates.length-1)go(dates[i+1])};
+next.onclick=()=>{const i=dates.indexOf(sel.value);if(i>0)go(dates[i-1])};
+window.addEventListener('hashchange',()=>show(fromHash()||dates[0]));
+(async()=>{
+  try{const r=await fetch('dates.json',{cache:'no-store'});dates=await r.json()}catch(e){box.innerHTML='<div class="status">日報清單暫時打不開。</div>';return}
+  sel.innerHTML=dates.map(d=>{const t=new Date(d+'T00:00:00');return `<option value="${d}">${t.getMonth()+1}/${t.getDate()}（週${'日一二三四五六'[t.getDay()]}）</option>`}).join('');
+  show(fromHash()||dates[0]);
+})();
+</script>
+</body>
+</html>
